@@ -1,5 +1,7 @@
 import pygame
 import numpy
+import math
+import random
 
 # initialize the pygame library
 pygame.init()
@@ -178,7 +180,120 @@ def score_position(board, piece):
             for i in range(WIN_LENGTH):
                 window.append(int(board[r + 3 - i][c + i]))
             score += evaluate_window(window, piece)
+    #print(score)
     return score
+
+WIN_CNT = 1000000000000000000
+LOS_CNT = -100000000000000000
+def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.inf, AlphaBetaFlag = False):
+    # get all possible position valid to drop piece
+    valid_locations = get_all_valid_locations(board)
+
+    # check if current node is end of the game
+    # if agent winning end the game
+    if check_winning_player(board, AGENT):
+        return None, WIN_CNT
+    # if computer winning end the game
+    elif check_winning_player(board, COMPUTER):
+        return None, LOS_CNT
+    # Game is over, no more valid moves
+    elif len(get_all_valid_locations(board)) == 0:
+        return None, 0
+    # Force stop : Depth is zero
+    elif depth == 0:
+        return None, score_position(board, AGENT)
+
+    # check if the current player want to maximize
+    if maximizingPlayer:
+        # get minimum score and random position as initial value
+        current_score = -math.inf
+        column = [random.choice(valid_locations)]
+
+        # check the possible cols to add new piece
+        for col in valid_locations:
+            row = get_next_available_row(board, col)
+
+            # simulate as we drop the piece and check board score after it
+            board_copy = board.copy()
+            drop_piece_in_board(board_copy, row, col, AGENT)
+            new_score = AI_Algorithm(board_copy, depth - 1, False, alpha, beta, AlphaBetaFlag)[1]
+
+            if new_score == WIN_CNT:
+                return col, new_score
+
+            if new_score > current_score:
+                current_score = new_score
+                column = [col]
+
+            # if we use alpha beta instead of minimax it's will help instead of repeat the code
+            if AlphaBetaFlag:
+                alpha = max(alpha, current_score)
+                if alpha >= beta:
+                    break
+
+        return random.choice(column), current_score
+
+    # Minimizing player
+    else:
+        # get maximum score and random position as initial value
+        current_score = math.inf
+        column = [random.choice(valid_locations)]
+
+        # check the possible cols to add new piece
+        for col in valid_locations:
+            row = get_next_available_row(board, col)
+
+            # simulate as we drop the piece and check board score after it
+            board_copy = board.copy()
+            drop_piece_in_board(board_copy, row, col, COMPUTER)
+            new_score = AI_Algorithm(board_copy, depth - 1, True, alpha, beta, AlphaBetaFlag)[1]
+
+            if new_score == LOS_CNT:
+                return col, new_score
+
+            if new_score < current_score:
+                current_score = new_score
+                column = [col]
+
+            # if we use alpha beta instead of minimax it's will help instead of repeat the code
+            if AlphaBetaFlag:
+                beta = min(beta, current_score)
+                if alpha >= beta:
+                    break
+        return random.choice(column), current_score
+
+def play(board, col, piece):
+    if (check_current_valid_location(board, col)):
+        row = get_next_available_row(board, col)
+        drop_piece_in_board(board, row, col, piece, True)
+        return True
+
+def minimax(board, player, level):
+    if level == 'easy':
+        if player == AGENT:
+            return AI_Algorithm(board, 1, True)[0]
+        else:
+            return AI_Algorithm(board, 1, False)[0]
+    else:
+        if player == AGENT:
+            return AI_Algorithm(board, 3, True)[0]
+        else:
+            return AI_Algorithm(board, 3, False)[0]
+
+def alpha_beta(board, player):
+    if player == AGENT:
+        return AI_Algorithm(board, 5, True, -math.inf, math.inf, True)[0]
+    else:
+        return AI_Algorithm(board, 5, False, -math.inf, math.inf, True)[0]
+
+def draw_board():
+    for col in range(TOTAL_COLUMN):
+        for row in range(TOTAL_ROW):
+            # Draw a solid yellow rectangle
+            pygame.draw.rect(screen, YELLOW, pygame.Rect(col * ShapeSize, (TOTAL_ROW - row) * ShapeSize, ShapeSize, ShapeSize))
+            # Draw a solid white circle
+            pygame.draw.circle(screen, WHITE, (col * ShapeSize + ShapeSize / 2, (TOTAL_ROW - row) * ShapeSize + ShapeSize / 2), ShapeSize / 2 - 5)
+    pygame.display.update()
 
 # Run until the user asks to quit
 running = True
