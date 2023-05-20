@@ -2,6 +2,7 @@ import pygame
 import numpy
 import math
 import random
+import time
 
 # initialize the pygame library
 pygame.init()
@@ -14,6 +15,8 @@ board = numpy.zeros((TOTAL_ROW, TOTAL_COLUMN))
 # how many pieces to win?
 WIN_LENGTH = 4
 
+game_over = False   # will be true if one player win
+turn = 1            # to determine how is playing now
 ShapeSize = 100     # size of the Square 1*1
 WIDTH = TOTAL_COLUMN * ShapeSize
 HEIGHT = (TOTAL_ROW + 1) * ShapeSize
@@ -183,8 +186,8 @@ def score_position(board, piece):
     #print(score)
     return score
 
-WIN_CNT = 1000000000000000000
-LOS_CNT = -100000000000000000
+WIN_CNT = 10000000000000000
+LOS_CNT = -10000000000000000
 def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.inf, AlphaBetaFlag = False):
     # get all possible position valid to drop piece
     valid_locations = get_all_valid_locations(board)
@@ -218,8 +221,10 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
             drop_piece_in_board(board_copy, row, col, AGENT)
             new_score = AI_Algorithm(board_copy, depth - 1, False, alpha, beta, AlphaBetaFlag)[1]
 
-            if new_score == WIN_CNT:
-                return col, new_score
+            # update the value
+            #if new_score == current_score:
+                # print('max', new_score)
+            #    column.append(col)
 
             if new_score > current_score:
                 current_score = new_score
@@ -231,6 +236,7 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
                 if alpha >= beta:
                     break
 
+        #print(column)
         return random.choice(column), current_score
 
     # Minimizing player
@@ -248,8 +254,10 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
             drop_piece_in_board(board_copy, row, col, COMPUTER)
             new_score = AI_Algorithm(board_copy, depth - 1, True, alpha, beta, AlphaBetaFlag)[1]
 
-            if new_score == LOS_CNT:
-                return col, new_score
+            # update the value
+            #if new_score == current_score:
+                # print('min', new_score)
+                #column.append(col)
 
             if new_score < current_score:
                 current_score = new_score
@@ -260,6 +268,7 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
                 beta = min(beta, current_score)
                 if alpha >= beta:
                     break
+        #print(column)
         return random.choice(column), current_score
 
 def play(board, col, piece):
@@ -271,20 +280,36 @@ def play(board, col, piece):
 def minimax(board, player, level):
     if level == 'easy':
         if player == AGENT:
-            return AI_Algorithm(board, 1, True)[0]
+            return AI_Algorithm(board, 2, True)[0]
         else:
-            return AI_Algorithm(board, 1, False)[0]
-    else:
+            return AI_Algorithm(board, 2, False)[0]
+    elif level == 'medium':
         if player == AGENT:
             return AI_Algorithm(board, 3, True)[0]
         else:
             return AI_Algorithm(board, 3, False)[0]
-
-def alpha_beta(board, player):
-    if player == AGENT:
-        return AI_Algorithm(board, 5, True, -math.inf, math.inf, True)[0]
     else:
-        return AI_Algorithm(board, 5, False, -math.inf, math.inf, True)[0]
+        if player == AGENT:
+            return AI_Algorithm(board, 4, True)[0]
+        else:
+            return AI_Algorithm(board, 4, False)[0]
+
+def alpha_beta(board, player, level):
+    if level == 'easy':
+        if player == AGENT:
+            return AI_Algorithm(board, 2, True, -math.inf, math.inf, True)[0]
+        else:
+            return AI_Algorithm(board, 2, False, -math.inf, math.inf, True)[0]
+    elif level == 'medium':
+        if player == AGENT:
+            return AI_Algorithm(board, 3, True, -math.inf, math.inf, True)[0]
+        else:
+            return AI_Algorithm(board, 3, False, -math.inf, math.inf, True)[0]
+    else:
+        if player == AGENT:
+            return AI_Algorithm(board, 5, True, -math.inf, math.inf, True)[0]
+        else:
+            return AI_Algorithm(board, 5, False, -math.inf, math.inf, True)[0]
 
 def draw_board():
     for col in range(TOTAL_COLUMN):
@@ -295,14 +320,275 @@ def draw_board():
             pygame.draw.circle(screen, WHITE, (col * ShapeSize + ShapeSize / 2, (TOTAL_ROW - row) * ShapeSize + ShapeSize / 2), ShapeSize / 2 - 5)
     pygame.display.update()
 
+
 # Run until the user asks to quit
 running = True
+
+# initial value for playing mode
+computer_play_mode = 'minimax'
+agent_play_mode = 'minimax'
+
+# choose playing mode
+screen.fill(WHITE)
+text = font.render("Choose for Computer", True, BLACK)
+screen.blit(text, ((WIDTH - text.get_width()) // 2, ((HEIGHT - text.get_height()) // 2) - 50))
+
+pygame.draw.rect(screen, BLACK, pygame.Rect(50, 350, 250, 100), False, 10)
+text = font.render("Minimax", True, WHITE)
+screen.blit(text, ((50*2 + 250 - text.get_width()) // 2, 355))
+pygame.draw.rect(screen, BLACK, pygame.Rect(350, 350, 300, 100), False, 10)
+text = font.render("Alpha-Beta", True, WHITE)
+screen.blit(text, ((350*2 + 300 - text.get_width()) // 2, 355))
+pygame.display.update()
+
+while running:
+    mode = False
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            position_x = event.pos[0]  # take x-axis position
+            position_y = event.pos[1]  # take y-axis position
+            #print(event.pos[0], event.pos[1])
+            # computer
+            if (position_y >= 350 and position_y <= 450):
+                if (position_x >= 50 and position_x <= 300):
+                    computer_play_mode = 'minimax'
+                elif (position_x >= 350 and position_x <= 650):
+                    computer_play_mode = 'alpha-beta'
+                else:
+                    continue
+                mode = True
+                break
+    if mode:
+        break
+
+if running:
+    # choose playing mode
+    screen.fill(WHITE)
+    text = font.render("Choose for Agent", True, BLACK)
+    screen.blit(text, ((WIDTH - text.get_width()) // 2, ((HEIGHT - text.get_height()) // 2) - 50))
+
+    pygame.draw.rect(screen, BLACK, pygame.Rect(50, 350, 250, 100), False, 10)
+    text = font.render("Minimax", True, WHITE)
+    screen.blit(text, ((50*2 + 250 - text.get_width()) // 2, 355))
+    pygame.draw.rect(screen, BLACK, pygame.Rect(350, 350, 300, 100), False, 10)
+    text = font.render("Alpha-Beta", True, WHITE)
+    screen.blit(text, ((350*2 + 300 - text.get_width()) // 2, 355))
+    pygame.display.update()
+
+while running:
+    mode = False
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            position_x = event.pos[0]  # take x-axis position
+            position_y = event.pos[1]  # take y-axis position
+            #print(event.pos[0], event.pos[1])
+            # computer
+            if (position_y >= 350 and position_y <= 450):
+                if (position_x >= 50 and position_x <= 300):
+                    agent_play_mode = 'minimax'
+                elif (position_x >= 350 and position_x <= 650):
+                    agent_play_mode = 'alpha-beta'
+                else:
+                    continue
+                mode = True
+                break
+    if mode:
+        break
+
+# Fill the background with white (default is black)
+if running:
+    screen.fill(WHITE)
+    text = font.render("Choose level of difficult", True, BLACK)
+    screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+    text = font.render("Computer", True, BLACK)
+    screen.blit(text, ((100 + 250 - text.get_width()) // 2, 100))
+    text = font.render("Agent", True, BLACK)
+    screen.blit(text, ((800 + 250 - text.get_width()) // 2, 100))
+def levels(x):
+    # Draw a solid GREEN rectangle (Easy)
+    pygame.draw.rect(screen, GREEN, pygame.Rect(x, 200, 250, 100), False, 10)  # screen, color, (x y - |), radius, round corner
+    text = font.render("Easy", True, WHITE)
+    screen.blit(text, (((x*2 + 250) - text.get_width()) // 2, 205))
+    # Draw a solid YELLOW rectangle (Medium)
+    pygame.draw.rect(screen, YELLOW, pygame.Rect(x, 350, 250, 100), False, 10)
+    text = font.render("Medium", True, WHITE)
+    screen.blit(text, (((x*2 + 250) - text.get_width()) // 2, 355))
+    # Draw a solid RED rectangle (HARD)
+    pygame.draw.rect(screen, RED, pygame.Rect(x, 500, 250, 100), False, 10)
+    text = font.render("Hard", True, WHITE)
+    screen.blit(text, (((x*2 + 250) - text.get_width()) // 2, 505))
+    pygame.display.update()
+
+if running:
+    # Choose Level
+    computer_mode = 'easy'
+    mode1 = True
+    levels(50)
+    agent_mode = 'easy'
+    mode2 = True
+    levels(400)
+    # Done click
+    pygame.draw.rect(screen, BLACK, pygame.Rect(220, 620, 250, 70), False, 10)
+    text = font.render("Done", True, WHITE)
+    screen.blit(text, ((440+250 - text.get_width()) // 2, 615))
+    pygame.display.update()
+
+while running:
+    mode = False
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            position_x = event.pos[0]  # take x-axis position
+            position_y = event.pos[1]  # take y-axis position
+            # print(event.pos[0], event.pos[1])
+            # computer
+            if (position_x >= 50 and position_x <= 300):
+                if (position_y >= 200 and position_y <= 300):
+                    levels(50)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(50, 200, 250, 100), False, 10)
+                    text = font.render("Easy", True, WHITE)
+                    screen.blit(text, ((350 - text.get_width()) // 2, 205))
+                    computer_mode = 'easy'
+                elif (position_y >= 350 and position_y <= 450):
+                    levels(50)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(50, 350, 250, 100), False, 10)
+                    text = font.render("Medium", True, WHITE)
+                    screen.blit(text, ((350 - text.get_width()) // 2, 355))
+                    computer_mode = 'medium'
+                elif (position_y >= 500 and position_y <= 600):
+                    levels(50)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(50, 500, 250, 100), False, 10)
+                    text = font.render("Hard", True, WHITE)
+                    screen.blit(text, ((350 - text.get_width()) // 2, 505))
+                    computer_mode = 'hard'
+                else:
+                    continue
+                pygame.display.update()
+                mode1 = False
+                break
+            # agent
+            elif (position_x >= 400 and position_x <= 650):
+                if (position_y >= 200 and position_y <= 300):
+                    levels(400)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(400, 200, 250, 100), False, 10)
+                    text = font.render("Easy", True, WHITE)
+                    screen.blit(text, ((800 + 250 - text.get_width()) // 2, 205))
+                    agent_mode = 'easy'
+                elif (position_y >= 350 and position_y <= 450):
+                    levels(400)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(400, 350, 250, 100), False, 10)
+                    text = font.render("Medium", True, WHITE)
+                    screen.blit(text, ((800 + 250 - text.get_width()) // 2, 355))
+                    agent_mode = 'medium'
+                elif (position_y >= 500 and position_y <= 600):
+                    levels(400)
+                    pygame.draw.rect(screen, BLACK, pygame.Rect(400, 500, 250, 100), False, 10)
+                    text = font.render("Hard", True, WHITE)
+                    screen.blit(text, ((800 + 250 - text.get_width()) // 2, 505))
+                    agent_mode = 'hard'
+                else:
+                    continue
+                pygame.display.update()
+                mode2 = False
+                break
+            elif (position_x >= 220 and position_x <= 470) and (position_y >= 620 and position_y <= 690):
+                if not mode1 and not mode2:
+                    mode = True
+    if mode:
+        break
+
+
+if running:
+    # Fill again the background with white (default is black)
+    screen.fill(WHITE)
+    draw_board()  # Draw Board
+    pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+    text = font.render("Computer Turn (RED)", True, RED)
+    screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+    pygame.display.update()
 
 while running:
     # Did the user click the window close button? (X in the left top)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    startTime = time.time()
+    if turn == COMPUTER and not game_over:
+        selection = minimax(board, COMPUTER, computer_mode) if computer_play_mode == 'minimax' else alpha_beta(board, COMPUTER, computer_mode)
+        if (play(board, selection, COMPUTER)):
+            if computer_mode != 'hard':
+                pygame.time.wait(500)
+            else:
+                pygame.time.wait(200)
+            if check_winning_player(board, COMPUTER, True):
+                pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+                text = "Computer Win !"
+                color = RED
+                text = font.render(text, True, color)
+                screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+                game_over = True
+                endTime = time.time()
+                with open('time_data', 'a') as f:
+                    f.write(f'{computer_play_mode},{startTime},{endTime},{computer_mode}''\n')
+            else:
+                turn = AGENT
+                text = "Agent Turn (BLUE)"
+                color = BLUE
+                pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+                text = font.render(text, True, color)
+                screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+            pygame.display.update()
+
+
+    if turn == AGENT and not game_over:
+        selection = minimax(board, AGENT, computer_play_mode) if agent_play_mode == 'minimax' else alpha_beta(board, AGENT, agent_mode)
+
+        if (play(board, selection, AGENT)):
+            if agent_mode != 'hard':
+                pygame.time.wait(500)
+            else:
+                pygame.time.wait(200)
+            if check_winning_player(board, AGENT, True):
+                pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+                text = "Agent Win !"
+                color = BLUE
+                text = font.render(text, True, color)
+                screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+                game_over = True
+                endTime = time.time()
+                with open('time_data', 'a') as f:
+                    f.write(f'{computer_play_mode},{startTime},{endTime},{agent_play_mode}''\n')
+            else:
+                turn = COMPUTER
+                text = "Computer Turn (RED)"
+                color = RED
+                pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+                text = font.render(text, True, color)
+                screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+            pygame.display.update()
+
+    # check if there is any valid location (game end if no one win but cannot play anymore)
+    if len(get_all_valid_locations(board)) == 0 and not game_over:
+        pygame.draw.rect(screen, WHITE, pygame.Rect(0, 0, WIDTH, ShapeSize))
+        text = font.render("Game Over", True, BLACK)
+        screen.blit(text, ((WIDTH - text.get_width()) // 2, 10))
+        pygame.display.update()
+        game_over = True
+        endTime = time.time()
+        with open('time_data', 'a') as f:
+            f.write(f'{computer_play_mode},{startTime},{endTime},{computer_mode}''\n')
+
+    if game_over:
+        text = font.render("Exit after 3 seconds...", True, BLACK)
+        screen.blit(text, ((WIDTH - text.get_width()) // 2, (HEIGHT - text.get_height()) // 2))
+        pygame.display.update()
+        pygame.time.wait(3000)
+        break
 
 # Done! Time to quit.
 pygame.quit()
