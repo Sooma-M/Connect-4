@@ -221,9 +221,9 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
             new_score = AI_Algorithm(board_copy, depth - 1, False, alpha, beta, AlphaBetaFlag)[1]
 
             # update the value
-            if new_score == current_score:
+            #if new_score == current_score:
                 # print('max', new_score)
-                column.append(col)
+            #    column.append(col)
 
             if new_score > current_score:
                 current_score = new_score
@@ -254,9 +254,9 @@ def AI_Algorithm(board, depth, maximizingPlayer, alpha = -math.inf, beta = math.
             new_score = AI_Algorithm(board_copy, depth - 1, True, alpha, beta, AlphaBetaFlag)[1]
 
             # update the value
-            if new_score == current_score:
+            #if new_score == current_score:
                 # print('min', new_score)
-                column.append(col)
+                #column.append(col)
 
             if new_score < current_score:
                 current_score = new_score
@@ -323,9 +323,13 @@ def draw_board():
 # Run until the user asks to quit
 running = True
 
+# initial value for playing mode
+computer_play_mode = 'minimax'
+agent_play_mode = 'minimax'
+
 # choose playing mode
 screen.fill(WHITE)
-text = font.render("Choose Algorithm", True, BLACK)
+text = font.render("Choose for Computer", True, BLACK)
 screen.blit(text, ((WIDTH - text.get_width()) // 2, ((HEIGHT - text.get_height()) // 2) - 50))
 
 pygame.draw.rect(screen, BLACK, pygame.Rect(50, 350, 250, 100), False, 10)
@@ -335,9 +339,6 @@ pygame.draw.rect(screen, BLACK, pygame.Rect(350, 350, 300, 100), False, 10)
 text = font.render("Alpha-Beta", True, WHITE)
 screen.blit(text, ((350*2 + 300 - text.get_width()) // 2, 355))
 pygame.display.update()
-
-# initial value for playing mode
-play_mode = 'minimax'
 
 while running:
     mode = False
@@ -351,9 +352,45 @@ while running:
             # computer
             if (position_y >= 350 and position_y <= 450):
                 if (position_x >= 50 and position_x <= 300):
-                    play_mode = 'minimax'
+                    computer_play_mode = 'minimax'
                 elif (position_x >= 350 and position_x <= 650):
-                    play_mode = 'alpha-beta'
+                    computer_play_mode = 'alpha-beta'
+                else:
+                    continue
+                mode = True
+                break
+    if mode:
+        break
+
+if running:
+    # choose playing mode
+    screen.fill(WHITE)
+    text = font.render("Choose for Agent", True, BLACK)
+    screen.blit(text, ((WIDTH - text.get_width()) // 2, ((HEIGHT - text.get_height()) // 2) - 50))
+
+    pygame.draw.rect(screen, BLACK, pygame.Rect(50, 350, 250, 100), False, 10)
+    text = font.render("Minimax", True, WHITE)
+    screen.blit(text, ((50*2 + 250 - text.get_width()) // 2, 355))
+    pygame.draw.rect(screen, BLACK, pygame.Rect(350, 350, 300, 100), False, 10)
+    text = font.render("Alpha-Beta", True, WHITE)
+    screen.blit(text, ((350*2 + 300 - text.get_width()) // 2, 355))
+    pygame.display.update()
+
+while running:
+    mode = False
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            position_x = event.pos[0]  # take x-axis position
+            position_y = event.pos[1]  # take y-axis position
+            #print(event.pos[0], event.pos[1])
+            # computer
+            if (position_y >= 350 and position_y <= 450):
+                if (position_x >= 50 and position_x <= 300):
+                    agent_play_mode = 'minimax'
+                elif (position_x >= 350 and position_x <= 650):
+                    agent_play_mode = 'alpha-beta'
                 else:
                     continue
                 mode = True
@@ -481,7 +518,7 @@ while running:
             running = False
 
     if turn == COMPUTER and not game_over:
-        selection = minimax(board, COMPUTER, computer_mode) if play_mode == 'minimax' else alpha_beta(board, COMPUTER, computer_mode)
+        selection = minimax(board, COMPUTER, computer_mode) if computer_play_mode == 'minimax' else alpha_beta(board, COMPUTER, computer_mode)
         if (play(board, selection, COMPUTER)):
             if computer_mode != 'hard':
                 pygame.time.wait(500)
@@ -505,7 +542,7 @@ while running:
 
 
     if turn == AGENT and not game_over:
-        selection = minimax(board, AGENT, agent_mode) if play_mode == 'minimax' else alpha_beta(board, AGENT, agent_mode)
+        selection = minimax(board, AGENT, agent_mode) if agent_play_mode == 'minimax' else alpha_beta(board, AGENT, agent_mode)
 
         if (play(board, selection, AGENT)):
             if agent_mode != 'hard':
